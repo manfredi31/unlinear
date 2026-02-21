@@ -1,6 +1,6 @@
 # unlinear
 
-MCP server built with mcp-use. Bootstrapped via `create-mcp-use-app`.
+MCP server implementing a JSON-first filesystem DB for repo operations, incidents, and GitHub-issue workflows.
 
 ## Getting Started
 
@@ -9,16 +9,48 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000/inspector` to test the server.
+Open `http://localhost:3000/inspector` to test tools.
 
-Edit the entry file to add tools, resources, and prompts. The server auto-reloads on change.
+## Database Layout
 
-## Learn More
+The server uses `db/` as local storage by default:
 
-- mcp-use docs: https://mcp-use.com/docs/typescript/getting-started/quickstart
+```txt
+db/
+  meta.json
+  indexes/
+    repos_all.json
+    repos_by_health.json
+    open_incidents.json
+  repos/
+  audit/
+  locks/
+```
 
-## Deploy on Manufact Cloud
+Set `UNLINEAR_DB_DIR` to override the location.
+
+## Environment Variables
+
+- `UNLINEAR_DB_DIR` optional filesystem path for DB root
+- `GITHUB_TOKEN` (or `GH_TOKEN`) required for canonical GitHub issue operations
+- `MCP_URL` optional public server URL
+- `PORT` optional server port (defaults to `3000`)
+
+## MCP Tools
+
+- `register-repo`
+- `refresh-repo-dev-metadata`
+- `update-operational-state`
+- `create-incident`
+- `handle-recovery`
+- `list-projects`
+- `get-project-overview`
+- `list-work-items`
+- `create-work-item`
+- `summarize-incident`
+
+## Build
 
 ```bash
-npm run deploy
+npm run build
 ```
