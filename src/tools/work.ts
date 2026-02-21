@@ -1,22 +1,10 @@
-// ---------------------------------------------------------------------------
-// Work queue tools — my items + agent claim
-// ---------------------------------------------------------------------------
-
 import { MCPServer, object, text, error } from "mcp-use/server";
 import { z } from "zod";
-import {
-    readJSON,
-    writeJSON,
-    listFiles,
-    WORKSPACE_ROOT,
-    projectDir,
-    issuesDir,
-} from "../storage/fsStore.js";
-import type { ProjectRegistry, IssueMeta, Board } from "../types.js";
-import { join } from "path";
+import { db } from "../db/index.js";
+import { issues, projects } from "../db/schema.js";
+import { eq, and, asc, isNull, sql, lte } from "drizzle-orm";
 
 export function registerWorkTools(server: MCPServer) {
-    // work-my-items
     server.tool(
         {
             name: "work-my-items",
@@ -28,42 +16,37 @@ export function registerWorkTools(server: MCPServer) {
         },
         async ({ userId }) => {
             try {
-                const registry = await readJSON<ProjectRegistry>(
-                    join(WORKSPACE_ROOT, "projects.json")
-                );
+                const items = await db
+                    .select({
+                        id: issues.id,
+                        projectId: issues.projectId,
+                        title: issues.title,
+                        status: issues.status,
+                        assignee: issues.assignee,
+                        priority: issues.priority,
+                        updatedAt: issues.updatedAt,
+                        plan: issues.plan,
+                        links: issues.links,
+                    })
+                    .from(issues)
+                    .where(eq(issues.assignee, userId))
+                    .orderBy(
+                        sql`case ${issues.status} when 'doing' then 0 when 'todo' then 1 when 'done' then 2 end`,
+                        asc(issues.priority)
+                    );
 
-                const items: Array<IssueMeta & { projectId: string }> = [];
+                const mapped = items.map((i) => ({
+                    ...i,
+                    updated_at: i.updatedAt.toISOString(),
+                }));
 
-                for (const project of registry.projects) {
-                    const dir = issuesDir(project.id);
-                    const files = await listFiles(dir);
-                    const jsonFiles = files.filter((f) => f.endsWith(".json"));
-
-                    for (const file of jsonFiles) {
-                        try {
-                            const issue = await readJSON<IssueMeta>(join(dir, file));
-                            if (issue.assignee === userId) {
-                                items.push({ ...issue, projectId: project.id });
-                            }
-                        } catch { /* skip */ }
-                    }
-                }
-
-                const statusOrder = { doing: 0, todo: 1, done: 2 };
-                items.sort((a, b) => {
-                    const s = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
-                    if (s !== 0) return s;
-                    return a.priority.localeCompare(b.priority);
-                });
-
-                return object({ userId, count: items.length, items });
+                return object({ userId, count: mapped.length, items: mapped });
             } catch (err) {
                 return error(`Failed to get work items: ${err instanceof Error ? err.message : "Unknown error"}`);
             }
         }
     );
 
-    // agent-claim-next
     server.tool(
         {
             name: "agent-claim-next",
@@ -76,37 +59,50 @@ export function registerWorkTools(server: MCPServer) {
         },
         async ({ projectId, agentId, priority_filter }) => {
             try {
-                const boardPath = join(projectDir(projectId), "board.json");
-                const board = await readJSON<Board>(boardPath);
-
-                for (const issueId of board.columns.todo) {
-                    const issuePath = join(issuesDir(projectId), `${issueId}.json`);
-                    try {
-                        const issue = await readJSON<IssueMeta>(issuePath);
-                        if (issue.assignee) continue;
-                        if (priority_filter && issue.priority > priority_filter) continue;
-
-                        issue.assignee = agentId;
-                        issue.status = "doing";
-                        issue.updated_at = new Date().toISOString();
-                        await writeJSON(issuePath, issue);
-
-                        const idx = board.columns.todo.indexOf(issueId);
-                        if (idx !== -1) board.columns.todo.splice(idx, 1);
-                        board.columns.doing.push(issueId);
-                        await writeJSON(boardPath, board);
-
-                        return object({
-                            claimed: true,
-                            issueId: issue.id,
-                            title: issue.title,
-                            priority: issue.priority,
-                            assignee: agentId,
-                        });
-                    } catch { continue; }
+                const conditions = [
+                    eq(issues.projectId, projectId),
+                    eq(issues.status, "todo"),
+                    isNull(issues.assignee),
+                ];
+                if (priority_filter) {
+                    conditions.push(lte(issues.priority, priority_filter));
                 }
 
-                return object({ claimed: false, message: "No unassigned todo issues available" });
+                const candidates = await db
+                    .select()
+                    .from(issues)
+                    .where(and(...conditions))
+                    .orderBy(asc(issues.priority), asc(issues.position))
+                    .limit(1);
+
+                if (candidates.length === 0) {
+                    return object({ claimed: false, message: "No unassigned todo issues available" });
+                }
+
+                const issue = candidates[0]!;
+
+                const maxPos = await db
+                    .select({ max: sql<number>`coalesce(max(${issues.position}), -1)` })
+                    .from(issues)
+                    .where(and(eq(issues.projectId, projectId), eq(issues.status, "doing")));
+
+                await db
+                    .update(issues)
+                    .set({
+                        assignee: agentId,
+                        status: "doing",
+                        position: (maxPos[0]?.max ?? -1) + 1,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(issues.id, issue.id));
+
+                return object({
+                    claimed: true,
+                    issueId: issue.id,
+                    title: issue.title,
+                    priority: issue.priority,
+                    assignee: agentId,
+                });
             } catch (err) {
                 return error(`Failed to claim issue: ${err instanceof Error ? err.message : "Unknown error"}`);
             }

@@ -1,22 +1,10 @@
-// ---------------------------------------------------------------------------
-// Issue tools — get, update plan, add note, set status, assign
-// ---------------------------------------------------------------------------
-
 import { MCPServer, object, text, markdown, error, widget } from "mcp-use/server";
 import { z } from "zod";
-import {
-    readJSON,
-    writeJSON,
-    readMarkdown,
-    appendMarkdown,
-    issuesDir,
-    projectDir,
-} from "../storage/fsStore.js";
-import type { IssueMeta, Board } from "../types.js";
-import { join } from "path";
+import { db } from "../db/index.js";
+import { issues } from "../db/schema.js";
+import { eq, and, sql } from "drizzle-orm";
 
 export function registerIssueTools(server: MCPServer) {
-    // issue-get
     server.tool(
         {
             name: "issue-get",
@@ -34,13 +22,28 @@ export function registerIssueTools(server: MCPServer) {
         },
         async ({ projectId, issueId }) => {
             try {
-                const dir = issuesDir(projectId);
-                const meta = await readJSON<IssueMeta>(join(dir, `${issueId}.json`));
-                const body = await readMarkdown(join(dir, `${issueId}.md`));
+                const [issue] = await db
+                    .select()
+                    .from(issues)
+                    .where(and(eq(issues.id, issueId), eq(issues.projectId, projectId)));
+
+                if (!issue) return error(`Issue not found: ${issueId}`);
 
                 return widget({
-                    props: { meta, markdown: body },
-                    output: text(`${meta.id}: ${meta.title} [${meta.status}]`),
+                    props: {
+                        meta: {
+                            id: issue.id,
+                            title: issue.title,
+                            status: issue.status,
+                            assignee: issue.assignee,
+                            priority: issue.priority,
+                            updated_at: issue.updatedAt.toISOString(),
+                            plan: issue.plan,
+                            links: issue.links,
+                        },
+                        markdown: issue.bodyMd,
+                    },
+                    output: text(`${issue.id}: ${issue.title} [${issue.status}]`),
                 });
             } catch (err) {
                 return error(
@@ -50,7 +53,6 @@ export function registerIssueTools(server: MCPServer) {
         }
     );
 
-    // issue-update-plan
     server.tool(
         {
             name: "issue-update-plan",
@@ -63,16 +65,20 @@ export function registerIssueTools(server: MCPServer) {
                 risks: z.array(z.string()).optional().describe("Known risks"),
             }),
         },
-        async ({ projectId, issueId, plan, acceptance, risks }) => {
+        async ({ projectId, issueId, plan }) => {
             try {
-                const issuePath = join(issuesDir(projectId), `${issueId}.json`);
-                const issue = await readJSON<IssueMeta>(issuePath);
-                issue.plan = plan;
-                issue.updated_at = new Date().toISOString();
-                const extended = issue as any;
-                if (acceptance) extended.acceptance = acceptance;
-                if (risks) extended.risks = risks;
-                await writeJSON(issuePath, extended);
+                const [issue] = await db
+                    .select()
+                    .from(issues)
+                    .where(and(eq(issues.id, issueId), eq(issues.projectId, projectId)));
+
+                if (!issue) return error(`Issue not found: ${issueId}`);
+
+                await db
+                    .update(issues)
+                    .set({ plan, updatedAt: new Date() })
+                    .where(eq(issues.id, issueId));
+
                 return text(`Updated plan for ${issueId} (${plan.length} steps)`);
             } catch (err) {
                 return error(`Failed to update plan: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -80,11 +86,10 @@ export function registerIssueTools(server: MCPServer) {
         }
     );
 
-    // issue-add-note
     server.tool(
         {
             name: "issue-add-note",
-            description: "Append a timestamped note to the issue's markdown. Append-only audit trail.",
+            description: "Append a timestamped note to the issue's markdown body. Append-only audit trail.",
             schema: z.object({
                 projectId: z.string().describe("Project ID"),
                 issueId: z.string().describe("Issue ID"),
@@ -94,17 +99,21 @@ export function registerIssueTools(server: MCPServer) {
         },
         async ({ projectId, issueId, note_md, author }) => {
             try {
-                const mdPath = join(issuesDir(projectId), `${issueId}.md`);
+                const [issue] = await db
+                    .select()
+                    .from(issues)
+                    .where(and(eq(issues.id, issueId), eq(issues.projectId, projectId)));
+
+                if (!issue) return error(`Issue not found: ${issueId}`);
+
                 const timestamp = new Date().toISOString().split("T")[0];
                 const block = `\n---\n**[${timestamp} ${author}]** ${note_md}\n`;
-                await appendMarkdown(mdPath, block);
+                const newBody = issue.bodyMd + block;
 
-                const jsonPath = join(issuesDir(projectId), `${issueId}.json`);
-                try {
-                    const issue = await readJSON<IssueMeta>(jsonPath);
-                    issue.updated_at = new Date().toISOString();
-                    await writeJSON(jsonPath, issue);
-                } catch { /* JSON might not exist */ }
+                await db
+                    .update(issues)
+                    .set({ bodyMd: newBody, updatedAt: new Date() })
+                    .where(eq(issues.id, issueId));
 
                 return text(`Note added to ${issueId} by ${author}`);
             } catch (err) {
@@ -113,11 +122,10 @@ export function registerIssueTools(server: MCPServer) {
         }
     );
 
-    // issue-set-status
     server.tool(
         {
             name: "issue-set-status",
-            description: "Update issue status (todo, doing, done). Syncs board column.",
+            description: "Update issue status (todo, doing, done). Automatically repositions in the target column.",
             schema: z.object({
                 projectId: z.string().describe("Project ID"),
                 issueId: z.string().describe("Issue ID"),
@@ -126,21 +134,27 @@ export function registerIssueTools(server: MCPServer) {
         },
         async ({ projectId, issueId, status }) => {
             try {
-                const issuePath = join(issuesDir(projectId), `${issueId}.json`);
-                const issue = await readJSON<IssueMeta>(issuePath);
-                const oldStatus = issue.status;
-                issue.status = status;
-                issue.updated_at = new Date().toISOString();
-                await writeJSON(issuePath, issue);
+                const [issue] = await db
+                    .select()
+                    .from(issues)
+                    .where(and(eq(issues.id, issueId), eq(issues.projectId, projectId)));
 
-                const boardPath = join(projectDir(projectId), "board.json");
-                const board = await readJSON<Board>(boardPath);
-                for (const col of Object.keys(board.columns) as Array<keyof Board["columns"]>) {
-                    const idx = board.columns[col].indexOf(issueId);
-                    if (idx !== -1) board.columns[col].splice(idx, 1);
-                }
-                board.columns[status].push(issueId);
-                await writeJSON(boardPath, board);
+                if (!issue) return error(`Issue not found: ${issueId}`);
+                const oldStatus = issue.status;
+
+                const maxPos = await db
+                    .select({ max: sql<number>`coalesce(max(${issues.position}), -1)` })
+                    .from(issues)
+                    .where(and(eq(issues.projectId, projectId), eq(issues.status, status)));
+
+                await db
+                    .update(issues)
+                    .set({
+                        status,
+                        position: (maxPos[0]?.max ?? -1) + 1,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(issues.id, issueId));
 
                 return text(`${issueId} status: ${oldStatus} → ${status}`);
             } catch (err) {
@@ -149,7 +163,6 @@ export function registerIssueTools(server: MCPServer) {
         }
     );
 
-    // issue-assign
     server.tool(
         {
             name: "issue-assign",
@@ -162,11 +175,18 @@ export function registerIssueTools(server: MCPServer) {
         },
         async ({ projectId, issueId, assignee }) => {
             try {
-                const issuePath = join(issuesDir(projectId), `${issueId}.json`);
-                const issue = await readJSON<IssueMeta>(issuePath);
-                issue.assignee = assignee || null;
-                issue.updated_at = new Date().toISOString();
-                await writeJSON(issuePath, issue);
+                const [issue] = await db
+                    .select()
+                    .from(issues)
+                    .where(and(eq(issues.id, issueId), eq(issues.projectId, projectId)));
+
+                if (!issue) return error(`Issue not found: ${issueId}`);
+
+                await db
+                    .update(issues)
+                    .set({ assignee: assignee || null, updatedAt: new Date() })
+                    .where(eq(issues.id, issueId));
+
                 return text(assignee ? `${issueId} assigned to ${assignee}` : `${issueId} unassigned`);
             } catch (err) {
                 return error(`Failed to assign issue: ${err instanceof Error ? err.message : "Unknown error"}`);
