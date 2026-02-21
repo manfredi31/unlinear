@@ -1,44 +1,30 @@
-// ---------------------------------------------------------------------------
-// Shared types used across tools
-// ---------------------------------------------------------------------------
+import type {
+  users,
+  projects,
+  projectMembers,
+  tasks,
+  taskRevisions,
+  approvals,
+  codexRuns,
+} from "./db/schema.js";
 
-export interface ProjectRegistry {
-    projects: ProjectEntry[];
-}
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 
-export interface ProjectEntry {
-    id: string;
-    name: string;
-    repo: string;
-    owner: string;
-    active: boolean;
-}
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;
 
-export interface ProjectMeta {
-    id: string;
-    name: string;
-    next_issue_num: number;
-    integrations: {
-        vercel: { projectId: string };
-        supabase: { ref: string };
-    };
-}
+export type ProjectMember = typeof projectMembers.$inferSelect;
+export type NewProjectMember = typeof projectMembers.$inferInsert;
 
-export interface Board {
-    columns: {
-        todo: string[];
-        doing: string[];
-        done: string[];
-    };
-}
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
 
-export interface IssueMeta {
-    id: string;
-    title: string;
-    status: "todo" | "doing" | "done";
-    assignee: string | null;
-    priority: string;
-    updated_at: string;
-    plan: string[];
-    links: Record<string, string | null>;
-}
+export type TaskRevision = typeof taskRevisions.$inferSelect;
+export type NewTaskRevision = typeof taskRevisions.$inferInsert;
+
+export type Approval = typeof approvals.$inferSelect;
+export type NewApproval = typeof approvals.$inferInsert;
+
+export type CodexRun = typeof codexRuns.$inferSelect;
+export type NewCodexRun = typeof codexRuns.$inferInsert;
