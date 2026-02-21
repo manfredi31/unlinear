@@ -31,7 +31,7 @@ const priorityStyles: Record<string, string> = {
 
 const IssueDetail: React.FC = () => {
   const { props, isPending, sendFollowUpMessage } = useWidget<IssueDetailProps>();
-  const { callTool: setStatus } = useCallTool("issue-set-status");
+  const { callTool: setStatus } = useCallTool<{ projectId: string; issueId: string; status: "todo" | "doing" | "done" }>("issue-set-status");
 
   if (isPending) {
     return (
@@ -55,7 +55,7 @@ const IssueDetail: React.FC = () => {
 
   return (
     <McpUseProvider>
-      <AppsSDKUIProvider>
+      <AppsSDKUIProvider linkComponent="a">
         <div className="p-6 max-w-2xl">
           {/* Header */}
           <div className="mb-5">

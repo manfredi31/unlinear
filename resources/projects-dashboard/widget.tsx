@@ -26,7 +26,7 @@ function StatusDot({ ok }: { ok: boolean }) {
 }
 
 function ProjectCard({ project }: { project: Project }) {
-  const { callTool } = useCallTool("project-board-get");
+  const { callTool } = useCallTool<{ projectId: string }>("project-board-get");
 
   return (
     <div
@@ -90,7 +90,7 @@ const ProjectsDashboard: React.FC = () => {
 
   return (
     <McpUseProvider>
-      <AppsSDKUIProvider>
+      <AppsSDKUIProvider linkComponent="a">
         <div className="p-6">
           <h2 className="text-xl font-bold text-default mb-5">📋 Projects</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
