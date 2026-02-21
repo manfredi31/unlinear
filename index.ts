@@ -2,6 +2,10 @@ import path from "node:path";
 import { MCPServer, error, markdown, object } from "mcp-use/server";
 import { z } from "zod";
 import { JsonFsDb } from "./src/db";
+import { registerProjectsTools } from "./src/tools/projects.js";
+import { registerBoardTools } from "./src/tools/board.js";
+import { registerIssueTools } from "./src/tools/issues.js";
+import { registerWorkTools } from "./src/tools/work.js";
 
 const dbRoot = process.env.UNLINEAR_DB_DIR || path.join(process.cwd(), "db");
 const db = new JsonFsDb(dbRoot);
@@ -263,43 +267,43 @@ server.tool(
         health:
           health_status !== undefined || warnings_count !== undefined
             ? {
-                ...(health_status !== undefined ? { status: health_status } : {}),
-                ...(warnings_count !== undefined ? { warnings_count } : {}),
-              }
+              ...(health_status !== undefined ? { status: health_status } : {}),
+              ...(warnings_count !== undefined ? { warnings_count } : {}),
+            }
             : undefined,
         deploy:
           deploy_provider !== undefined ||
-          deploy_branch !== undefined ||
-          deploy_status !== undefined ||
-          deploy_id !== undefined ||
-          deploy_link !== undefined
+            deploy_branch !== undefined ||
+            deploy_status !== undefined ||
+            deploy_id !== undefined ||
+            deploy_link !== undefined
             ? {
-                ...(deploy_provider !== undefined ? { provider: deploy_provider } : {}),
-                ...(deploy_branch !== undefined ? { branch: deploy_branch } : {}),
-                ...(deploy_status !== undefined ? { status: deploy_status } : {}),
-                ...(deploy_id !== undefined ? { last_deploy_id: deploy_id } : {}),
-                ...(deploy_link !== undefined ? { link: deploy_link } : {}),
-              }
+              ...(deploy_provider !== undefined ? { provider: deploy_provider } : {}),
+              ...(deploy_branch !== undefined ? { branch: deploy_branch } : {}),
+              ...(deploy_status !== undefined ? { status: deploy_status } : {}),
+              ...(deploy_id !== undefined ? { last_deploy_id: deploy_id } : {}),
+              ...(deploy_link !== undefined ? { link: deploy_link } : {}),
+            }
             : undefined,
         signals,
         work:
           open_issues_count !== undefined || top_issues !== undefined
             ? {
-                ...(open_issues_count !== undefined ? { open_issues_count } : {}),
-                ...(top_issues !== undefined
-                  ? {
-                      top: top_issues.map((issue) => ({
-                        provider: issue.provider ?? "github",
-                        number: issue.number,
-                        title: issue.title,
-                        state: issue.state,
-                        assignee: issue.assignee ?? null,
-                        labels: issue.labels ?? [],
-                        url: issue.url,
-                      })),
-                    }
-                  : {}),
-              }
+              ...(open_issues_count !== undefined ? { open_issues_count } : {}),
+              ...(top_issues !== undefined
+                ? {
+                  top: top_issues.map((issue) => ({
+                    provider: issue.provider ?? "github",
+                    number: issue.number,
+                    title: issue.title,
+                    state: issue.state,
+                    assignee: issue.assignee ?? null,
+                    labels: issue.labels ?? [],
+                    url: issue.url,
+                  })),
+                }
+                : {}),
+            }
             : undefined,
       });
       return object(asRecord(nextState));
@@ -480,23 +484,23 @@ server.tool(
           health:
             health_status !== undefined || warnings_count !== undefined
               ? {
-                  ...(health_status !== undefined ? { status: health_status } : {}),
-                  ...(warnings_count !== undefined ? { warnings_count } : {}),
-                }
+                ...(health_status !== undefined ? { status: health_status } : {}),
+                ...(warnings_count !== undefined ? { warnings_count } : {}),
+              }
               : undefined,
           deploy:
             deploy_provider !== undefined ||
-            deploy_branch !== undefined ||
-            deploy_status !== undefined ||
-            deploy_id !== undefined ||
-            deploy_link !== undefined
+              deploy_branch !== undefined ||
+              deploy_status !== undefined ||
+              deploy_id !== undefined ||
+              deploy_link !== undefined
               ? {
-                  ...(deploy_provider !== undefined ? { provider: deploy_provider } : {}),
-                  ...(deploy_branch !== undefined ? { branch: deploy_branch } : {}),
-                  ...(deploy_status !== undefined ? { status: deploy_status } : {}),
-                  ...(deploy_id !== undefined ? { last_deploy_id: deploy_id } : {}),
-                  ...(deploy_link !== undefined ? { link: deploy_link } : {}),
-                }
+                ...(deploy_provider !== undefined ? { provider: deploy_provider } : {}),
+                ...(deploy_branch !== undefined ? { branch: deploy_branch } : {}),
+                ...(deploy_status !== undefined ? { status: deploy_status } : {}),
+                ...(deploy_id !== undefined ? { last_deploy_id: deploy_id } : {}),
+                ...(deploy_link !== undefined ? { link: deploy_link } : {}),
+              }
               : undefined,
           ...(clear_signals ? { signals: [] } : {}),
         },
@@ -664,6 +668,12 @@ server.tool(
     }
   }
 );
+
+// Register our project management tools (widgets, kanban, work queue)
+registerProjectsTools(server);
+registerBoardTools(server);
+registerIssueTools(server);
+registerWorkTools(server);
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 console.log(`Server running on port ${PORT}`);

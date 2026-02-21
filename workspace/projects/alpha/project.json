@@ -1,0 +1,13 @@
+{
+    "id": "alpha",
+    "name": "Alpha",
+    "next_issue_num": 4,
+    "integrations": {
+        "vercel": {
+            "projectId": ""
+        },
+        "supabase": {
+            "ref": ""
+        }
+    }
+}

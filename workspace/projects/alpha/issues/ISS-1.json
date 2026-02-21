@@ -1,0 +1,17 @@
+{
+    "id": "ISS-1",
+    "title": "Setup Vercel deployment pipeline",
+    "status": "todo",
+    "assignee": null,
+    "priority": "P1",
+    "updated_at": "2026-02-21T00:00:00Z",
+    "plan": [
+        "Configure Vercel project settings",
+        "Set up environment variables",
+        "Test preview deployments"
+    ],
+    "links": {
+        "vercel": null,
+        "supabase": null
+    }
+}

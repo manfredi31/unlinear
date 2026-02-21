@@ -1,0 +1,11 @@
+{
+    "projects": [
+        {
+            "id": "alpha",
+            "name": "Alpha",
+            "repo": "github.com/team/alpha",
+            "owner": "team",
+            "active": true
+        }
+    ]
+}
