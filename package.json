@@ -6,8 +6,7 @@
   "license": "MIT",
   "main": "dist/index.js",
   "scripts": {
-    "postinstall": "echo \"Skipping mcp-use generate-types during install\"",
-    "generate-types": "mcp-use generate-types",
+    "postinstall": "mcp-use generate-types",
     "type-check": "tsc --noEmit",
     "build": "mcp-use build",
     "dev": "mcp-use dev",

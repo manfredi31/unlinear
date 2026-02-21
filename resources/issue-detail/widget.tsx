@@ -1,6 +1,6 @@
 import { AppsSDKUIProvider } from "@openai/apps-sdk-ui/components/AppsSDKUIProvider";
 import { Button } from "@openai/apps-sdk-ui/components/Button";
-import { McpUseProvider, useWidget, useCallTool, type WidgetMetadata } from "mcp-use/react";
+import { McpUseProvider, useWidget, type WidgetMetadata } from "mcp-use/react";
 import React from "react";
 import "../styles.css";
 import { propsSchema, type IssueDetailProps } from "./types";
@@ -31,7 +31,6 @@ const priorityStyles: Record<string, string> = {
 
 const IssueDetail: React.FC = () => {
   const { props, isPending, sendFollowUpMessage } = useWidget<IssueDetailProps>();
-  const { callTool: setStatus } = useCallTool<{ projectId: string; issueId: string; status: "todo" | "doing" | "done" }>("issue-set-status");
 
   if (isPending) {
     return (
@@ -115,36 +114,6 @@ const IssueDetail: React.FC = () => {
 
           {/* Actions */}
           <div className="flex gap-2 flex-wrap">
-            {meta.status !== "doing" && (
-              <Button
-                color="secondary"
-                variant="outline"
-                size="md"
-                onClick={() => setStatus({ projectId: "alpha", issueId: meta.id, status: "doing" })}
-              >
-                ▶ Start
-              </Button>
-            )}
-            {meta.status !== "done" && (
-              <Button
-                color="secondary"
-                variant="outline"
-                size="md"
-                onClick={() => setStatus({ projectId: "alpha", issueId: meta.id, status: "done" })}
-              >
-                ✅ Done
-              </Button>
-            )}
-            {meta.status !== "todo" && (
-              <Button
-                color="secondary"
-                variant="outline"
-                size="md"
-                onClick={() => setStatus({ projectId: "alpha", issueId: meta.id, status: "todo" })}
-              >
-                ↩ Reopen
-              </Button>
-            )}
             <Button
               color="secondary"
               variant="ghost"
