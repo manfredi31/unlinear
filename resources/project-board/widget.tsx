@@ -29,7 +29,7 @@ const columnConfig = {
 } as const;
 
 function IssueCard({ issue, projectId }: { issue: Issue; projectId: string }) {
-  const { callTool } = useCallTool("issue-get");
+  const { callTool } = useCallTool<{ projectId: string; issueId: string }>("issue-get");
   const pc = priorityStyles[issue.priority] ?? priorityStyles.P3;
 
   return (
@@ -117,7 +117,7 @@ const ProjectBoard: React.FC = () => {
 
   return (
     <McpUseProvider>
-      <AppsSDKUIProvider>
+      <AppsSDKUIProvider linkComponent="a">
         <div className="p-6">
           <div className="flex justify-between items-center mb-5">
             <h2 className="text-xl font-bold text-default">

@@ -8,7 +8,7 @@ export const metaSchema = z.object({
     priority: z.string(),
     updated_at: z.string(),
     plan: z.array(z.string()),
-    links: z.record(z.string().nullable()),
+    links: z.record(z.string(), z.string().nullable()),
 });
 
 export const propsSchema = z.object({
