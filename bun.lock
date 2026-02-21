@@ -6,6 +6,8 @@
       "name": "project",
       "dependencies": {
         "@openai/apps-sdk-ui": "^0.2.1",
+        "@openai/chatkit": "^1.6.0",
+        "@openai/chatkit-react": "^1.5.0",
         "@tanstack/react-query": "^5.90.21",
         "cors": "^2.8.6",
         "drizzle-orm": "^0.45.1",
@@ -197,6 +199,10 @@
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
     "@openai/apps-sdk-ui": ["@openai/apps-sdk-ui@0.2.1", "", { "dependencies": { "clsx": "^2.1.1", "lodash": "4.17.21", "luxon": "3.7.1", "radix-ui": "^1.1.3", "react-markdown": "^9.0.3", "react-merge-refs": "^2.1.1", "react-syntax-highlighter": "^16.1.0", "rehype-katex": "7.0.1", "remark-breaks": "^4.0.0", "remark-directive": "^3.0.1", "remark-gfm": "^4.0.0", "remark-math": "6.0.0", "unist-util-visit": "^5.0.0", "usehooks-ts": "^3.1.1" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "tailwindcss": "^4.0.10" } }, "sha512-1sl/yfpVm28jY8mccQhP8p4aCS4PeZIz2eKJw+dcyUfwON3p9xdJm21RcUTHcPAhBU+pleGMDQLqVcau6yGlKA=="],
+
+    "@openai/chatkit": ["@openai/chatkit@1.6.0", "", {}, "sha512-lV19ocIYI7EPvP4ZpKNOtoJFmZpyf4DB5472rRd6ua7TE22ENEy0Vbi4OSCJzSD8hBa/v6KyF77qxIV7I1paAg=="],
+
+    "@openai/chatkit-react": ["@openai/chatkit-react@1.5.0", "", { "dependencies": { "@openai/chatkit": "1.6.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" } }, "sha512-3HnQrkEqJEJ75N0rNaArwzgLPOrTd/FwnNfGVbqRaCTq2/Eb9aHLXQzMXyNYBA5ORUiwZl3FyFqpFieG0f9YUQ=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 

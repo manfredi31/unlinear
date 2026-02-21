@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@openai/apps-sdk-ui": "^0.2.1",
+    "@openai/chatkit": "^1.6.0",
+    "@openai/chatkit-react": "^1.5.0",
     "@tanstack/react-query": "^5.90.21",
     "cors": "^2.8.6",
     "drizzle-orm": "^0.45.1",
