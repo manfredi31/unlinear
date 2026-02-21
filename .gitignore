@@ -43,6 +43,6 @@ Thumbs.db
 *~
 
 # Local DB data
-db/
+/db/
 workspace/
 
