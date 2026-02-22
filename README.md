@@ -70,6 +70,12 @@ Every step works through natural conversation from any MCP-compatible client.
 
 When used inside ChatGPT, unlinear renders **interactive React widgets** directly in the conversation.
 
+<p align="center">
+  <img src="public/widget-tasks.png" width="480" alt="Task list widget" />
+  <br/><br/>
+  <img src="public/widget-task-detail.png" width="480" alt="Task detail widget" />
+</p>
+
 | Widget                 | What you see                                                     |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Projects dashboard** | All your projects as cards — tap to drill in                     |
