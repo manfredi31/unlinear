@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icon.svg" width="80" alt="unlinear logo" />
+  <img src="public/unlinear.png" width="120" alt="unlinear logo" />
 </p>
 
 <h1 align="center">unlinear</h1>
@@ -21,13 +21,13 @@
 
 ## The Vision
 
-> As we move into a world where every line of code is written by AI, the most valuable skill isn't writing code, it's communicating intent and discussing ideas at a high level in natural language. 
+> As we move into a world where every line of code is written by AI, the most valuable skill isn't writing code, it's communicating intent and discussing ideas at a high level in natural language.
 
 GitHub was designed to share and review code. We believe that specifications, not code, are becoming the fundamental unit of programming.
 
-Unlinear is a Github, but for markdown plans as the most important artifact (instead of code), powered by MCP. 
+Unlinear is a Github, but for markdown plans as the most important artifact (instead of code), powered by MCP.
 
-Code is now a low-leverage artifact. Technical decisions are what matters, so humans should focus on plans. 
+Code is now a low-leverage artifact. Technical decisions are what matters, so humans should focus on plans.
 
 In Unlinear, engineers collaborate on high-level markdown plans. They discuss, refine, and approve the specification together. Once the plan is finalized, Unlinear hands it off to a coding agent for implementation.
 
@@ -66,35 +66,32 @@ Model Context Protocol is the interoperability key that makes this possible. Bec
 
 Every step works through natural conversation from any MCP-compatible client.
 
-
 ## Interactive Widgets
 
 When used inside ChatGPT, unlinear renders **interactive React widgets** directly in the conversation.
 
-| Widget | What you see |
-|---|---|
-| **Projects dashboard** | All your projects as cards — tap to drill in |
-| **Project board** | Kanban-style task board with status columns |
-| **Task detail** | Full plan, contributor diffs, and a comment box to post feedback |
+| Widget                 | What you see                                                     |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Projects dashboard** | All your projects as cards — tap to drill in                     |
+| **Project board**      | Kanban-style task board with status columns                      |
+| **Task detail**        | Full plan, contributor diffs, and a comment box to post feedback |
 
 Widgets are fully interactive: navigate between projects, read task plans, and post comments — all without leaving the chat. They respond to light/dark theme automatically and update live as data changes.
 
-
 ## MCP Tools
 
-| Tool | Description |
-|---|---|
-| `create-project` | Create a new project |
-| `list-projects` | List all projects (renders widget) |
-| `get-project` | Project details with members (renders widget) |
-| `create-task` | Create a task with an initial plan |
-| `list-tasks` | List tasks in a project, filter by status |
-| `get-task` | Full task detail with current plan |
-| `comment-on-task` | Comment on a task — LLM rewrites the plan |
-| `approve-task` | Approve the current revision and queue a build |
+| Tool                | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `create-project`    | Create a new project                            |
+| `list-projects`     | List all projects (renders widget)              |
+| `get-project`       | Project details with members (renders widget)   |
+| `create-task`       | Create a task with an initial plan              |
+| `list-tasks`        | List tasks in a project, filter by status       |
+| `get-task`          | Full task detail with current plan              |
+| `comment-on-task`   | Comment on a task — LLM rewrites the plan       |
+| `approve-task`      | Approve the current revision and queue a build  |
 | `get-task-timeline` | Revision history showing the full collaboration |
-| `get-codex-run` | Check build status |
-
+| `get-codex-run`     | Check build status                              |
 
 ## Getting Started
 
