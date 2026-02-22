@@ -99,11 +99,25 @@ server.tool(
   },
   async ({ projectId }) => {
     try {
-      const project = await getProject(projectId);
+      const [project, tasks] = await Promise.all([
+        getProject(projectId),
+        listTasks({ projectId }),
+      ]);
       if (!project) return error(`Project not found: ${projectId}`);
       return widget({
-        props: project,
-        output: text(`Project: ${project.name} (${project.members.length} members)`),
+        props: {
+          ...project,
+          tasks: tasks.map((task) => ({
+            id: task.id,
+            number: task.number,
+            title: task.title,
+            status: task.status,
+            updatedAt: task.updatedAt.toISOString(),
+          })),
+        },
+        output: text(
+          `Project: ${project.name} (${tasks.length} tasks, ${project.members.length} members)`,
+        ),
       });
     } catch (err) {
       return error(`Failed to get project: ${errMsg(err)}`);

@@ -1,4 +1,5 @@
-import { McpUseProvider, useWidget, useWidgetTheme, type WidgetMetadata } from "mcp-use/react";
+import { useState } from "react";
+import { McpUseProvider, useCallTool, useWidget, useWidgetTheme, type WidgetMetadata } from "mcp-use/react";
 import { z } from "zod";
 
 function useColors() {
@@ -38,7 +39,23 @@ type Props = z.infer<typeof propsSchema>;
 
 export default function ProjectsList() {
   const { props, isPending } = useWidget<Props>();
+  const { callTool: getProjectRaw, isPending: isOpeningProject } = useCallTool("get-project");
+  const getProject = getProjectRaw as (
+    input: { projectId: string },
+    options?: { onSettled?: () => void },
+  ) => void;
+  const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const colors = useColors();
+
+  const handleOpenProject = (projectId: string) => {
+    setOpeningProjectId(projectId);
+    getProject(
+      { projectId },
+      {
+        onSettled: () => setOpeningProjectId(null),
+      },
+    );
+  };
 
   if (isPending) {
     return (
@@ -77,19 +94,26 @@ export default function ProjectsList() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {props.projects.map((project) => (
-              <div
+              <button
                 key={project.id}
+                type="button"
+                onClick={() => handleOpenProject(project.id)}
+                disabled={isOpeningProject}
                 style={{
+                  width: "100%",
+                  textAlign: "left",
+                  font: "inherit",
                   padding: 14,
                   border: `1px solid ${colors.border}`,
                   borderRadius: 8,
                   backgroundColor: colors.cardBg,
+                  cursor: isOpeningProject ? "wait" : "pointer",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>{project.name}</h3>
                   <span style={{ fontSize: 11, color: colors.textSecondary, fontFamily: "monospace" }}>
-                    {project.id.slice(0, 8)}
+                    {openingProjectId === project.id ? "Opening..." : project.id.slice(0, 8)}
                   </span>
                 </div>
                 {project.description && (
@@ -100,7 +124,7 @@ export default function ProjectsList() {
                 <div style={{ marginTop: 8, fontSize: 11, color: colors.textSecondary }}>
                   Created {new Date(project.createdAt).toLocaleDateString()}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
