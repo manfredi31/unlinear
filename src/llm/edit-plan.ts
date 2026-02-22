@@ -23,7 +23,6 @@ export async function editPlan(
         content: `## Current plan\n\n${currentBody}\n\n---\n\n## Requested change\n\n${comment}`,
       },
     ],
-    temperature: 0.2,
   });
 
   const result = response.choices[0]?.message?.content;
