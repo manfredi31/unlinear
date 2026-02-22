@@ -228,6 +228,7 @@ server.tool(
         getTaskReviewers(taskId),
       ]);
       if (!task) return error(`Task not found: ${taskId}`);
+      const updateCount = Math.max(0, task.currentRevision - 1);
       return widget({
         props: {
           taskId: task.id,
@@ -251,7 +252,9 @@ server.tool(
             createdAt: r.createdAt.toISOString(),
           })),
         },
-        output: text(`Task: ${task.title} [${task.status}] (rev ${task.currentRevision})`),
+        output: text(
+          `Task: ${task.title} [${task.status}] (${updateCount} update${updateCount === 1 ? "" : "s"})`,
+        ),
       });
     } catch (err) {
       return error(`Failed to get task: ${errMsg(err)}`);

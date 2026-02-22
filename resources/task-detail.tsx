@@ -507,7 +507,7 @@ function DiffView({ oldBody, newBody, colors }: {
 type Tab = "spec" | "revisions" | "activity";
 
 export default function TaskDetail() {
-  const { props, isPending: isLoading, sendFollowUpMessage } = useWidget<Props>();
+  const { props, isPending: isLoading } = useWidget<Props>();
   const colors = useColors();
 
   const { callToolAsync: submitComment, isPending: isSubmitting } = useCallTool("comment-on-task" as any);
@@ -606,10 +606,6 @@ export default function TaskDetail() {
     }
   };
 
-  const handleAskAI = () => {
-    sendFollowUpMessage(`Analyze task "${props.title}" and suggest improvements or next steps for the plan.`);
-  };
-
   if (isLoading) {
     return (
       <McpUseProvider autoSize>
@@ -622,6 +618,10 @@ export default function TaskDetail() {
 
   const comments = revisions.filter((r) => r.comment);
   const revisionsWithBodies = revisions.filter((r) => r.body);
+  const baseRevisionNumber = revisionsWithBodies[0]?.revisionNumber ?? 0;
+  const revisionsAfterInitialPlan = revisionsWithBodies.slice(1);
+  const displayRevisionNumber = (revisionNumber: number) =>
+    Math.max(1, revisionNumber - baseRevisionNumber);
 
   const tabStyle = (tab: Tab): React.CSSProperties => ({
     padding: "8px 16px", fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
@@ -683,14 +683,14 @@ export default function TaskDetail() {
           borderBottom: `1px solid ${colors.border}`,
         }}>
           <div style={tabStyle("spec")} onClick={() => setActiveTab("spec")}>Specification</div>
-          <div style={tabStyle("revisions")} onClick={() => { setActiveTab("revisions"); if (selectedRevision === null && revisionsWithBodies.length > 0) setSelectedRevision(revisionsWithBodies[revisionsWithBodies.length - 1].revisionNumber); }}>
+          <div style={tabStyle("revisions")} onClick={() => { setActiveTab("revisions"); if (selectedRevision === null && revisionsAfterInitialPlan.length > 0) setSelectedRevision(revisionsAfterInitialPlan[revisionsAfterInitialPlan.length - 1].revisionNumber); }}>
             Revisions
             <span style={{
               marginLeft: 6, padding: "1px 6px", fontSize: 10, fontWeight: 500,
               borderRadius: 8, backgroundColor: colors.cardBg,
               border: `1px solid ${colors.border}`,
             }}>
-              {revisionsWithBodies.length}
+              {revisionsAfterInitialPlan.length}
             </span>
           </div>
           <div style={tabStyle("activity")} onClick={() => setActiveTab("activity")}>
@@ -713,7 +713,7 @@ export default function TaskDetail() {
 
           {activeTab === "revisions" && (
             <div>
-              {revisionsWithBodies.length <= 1 ? (
+              {revisionsAfterInitialPlan.length === 0 ? (
                 <div style={{ padding: 16, textAlign: "center", color: colors.textSecondary, fontSize: 13 }}>
                   No revision diffs available yet. Revisions are created when comments are submitted.
                 </div>
@@ -723,7 +723,7 @@ export default function TaskDetail() {
                   <div style={{
                     display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap",
                   }}>
-                    {revisionsWithBodies.slice(1).map((rev) => {
+                    {revisionsAfterInitialPlan.map((rev) => {
                       const isSelected = selectedRevision === rev.revisionNumber;
                       return (
                         <button
@@ -738,7 +738,7 @@ export default function TaskDetail() {
                             cursor: "pointer",
                           }}
                         >
-                          Rev {rev.revisionNumber}
+                          Rev {displayRevisionNumber(rev.revisionNumber)}
                         </button>
                       );
                     })}
@@ -750,18 +750,24 @@ export default function TaskDetail() {
                     if (revIdx < 1) return null;
                     const prevRev = revisionsWithBodies[revIdx - 1];
                     const curRev = revisionsWithBodies[revIdx];
+                    const prevLabel =
+                      prevRev.revisionNumber === baseRevisionNumber
+                        ? "Initial plan"
+                        : `Rev ${displayRevisionNumber(prevRev.revisionNumber)}`;
                     return (
                       <div>
                         <div style={{
                           display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
                           fontSize: 12, color: colors.textSecondary,
                         }}>
-                          <span>Rev {prevRev.revisionNumber}</span>
+                          <span>{prevLabel}</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="5" y1="12" x2="19" y2="12" />
                             <polyline points="12 5 19 12 12 19" />
                           </svg>
-                          <span style={{ fontWeight: 600, color: colors.text }}>Rev {curRev.revisionNumber}</span>
+                          <span style={{ fontWeight: 600, color: colors.text }}>
+                            Rev {displayRevisionNumber(curRev.revisionNumber)}
+                          </span>
                           {curRev.authorName && (
                             <span style={{ marginLeft: 8 }}>by {curRev.authorName}</span>
                           )}
@@ -828,7 +834,7 @@ export default function TaskDetail() {
                               padding: "1px 6px", borderRadius: 4,
                               backgroundColor: colors.cardBg,
                             }}>
-                              Rev {rev.revisionNumber}
+                              Rev {displayRevisionNumber(rev.revisionNumber)}
                             </span>
                             <span style={{ fontSize: 11, color: colors.textSecondary }}>
                               {new Date(rev.createdAt).toLocaleString()}
@@ -867,18 +873,6 @@ export default function TaskDetail() {
             }}
           />
           <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              onClick={handleAskAI}
-              style={{
-                padding: "6px 16px", fontSize: 13, fontWeight: 500,
-                border: `1px solid ${colors.border}`, borderRadius: 8,
-                backgroundColor: colors.buttonSecondaryBg, color: colors.buttonSecondaryText,
-                cursor: "pointer",
-              }}
-            >
-              Ask AI
-            </button>
             <button
               type="submit"
               disabled={isSubmitting || !commentText.trim()}
