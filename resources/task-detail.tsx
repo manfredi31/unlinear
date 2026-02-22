@@ -32,6 +32,11 @@ function useColors() {
     errorText: theme === "dark" ? "#ef5350" : "#c62828",
     successBg: theme === "dark" ? "#1b3a1b" : "#e8f5e9",
     successText: theme === "dark" ? "#66bb6a" : "#2e7d32",
+    codeBlockBg: theme === "dark" ? "#111827" : "#f8fafc",
+    codeBlockBorder: theme === "dark" ? "#334155" : "#cbd5e1",
+    codeBlockText: theme === "dark" ? "#e2e8f0" : "#0f172a",
+    codeBlockLabelBg: theme === "dark" ? "#1e293b" : "#e2e8f0",
+    codeBlockLabelText: theme === "dark" ? "#cbd5e1" : "#334155",
     diffAddBg: theme === "dark" ? "#1a2e1a" : "#e6ffec",
     diffAddText: theme === "dark" ? "#4ade80" : "#116329",
     diffRemoveBg: theme === "dark" ? "#2e1a1a" : "#ffebe9",
@@ -225,6 +230,9 @@ function SimpleMarkdown({ content, colors }: { content: string; colors: ReturnTy
   const elements: React.ReactElement[] = [];
   let listItems: string[] = [];
   let listType: "ul" | "ol" | null = null;
+  let inCodeBlock = false;
+  let codeLanguage = "";
+  let codeLines: string[] = [];
   let key = 0;
 
   function flushList() {
@@ -246,8 +254,72 @@ function SimpleMarkdown({ content, colors }: { content: string; colors: ReturnTy
     listType = null;
   }
 
+  function flushCodeBlock() {
+    if (!inCodeBlock) return;
+    const languageLabel = codeLanguage || "text";
+    elements.push(
+      <div
+        key={key++}
+        style={{
+          margin: "12px 0",
+          border: `1px solid ${colors.codeBlockBorder}`,
+          borderRadius: 10,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: colors.codeBlockLabelBg,
+            color: colors.codeBlockLabelText,
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: 0.4,
+            padding: "6px 10px",
+          }}
+        >
+          {languageLabel}
+        </div>
+        <pre
+          style={{
+            margin: 0,
+            padding: "12px 14px",
+            backgroundColor: colors.codeBlockBg,
+            color: colors.codeBlockText,
+            overflowX: "auto",
+            fontSize: 12,
+            lineHeight: 1.6,
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace",
+          }}
+        >
+          <code>{codeLines.join("\n")}</code>
+        </pre>
+      </div>,
+    );
+    inCodeBlock = false;
+    codeLanguage = "";
+    codeLines = [];
+  }
+
   for (const line of lines) {
     const trimmed = line.trim();
+    if (trimmed.startsWith("```")) {
+      flushList();
+      if (!inCodeBlock) {
+        inCodeBlock = true;
+        codeLanguage = trimmed.slice(3).trim();
+        codeLines = [];
+      } else {
+        flushCodeBlock();
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
+
     if (!trimmed) { flushList(); continue; }
     if (trimmed.startsWith("# ")) {
       flushList();
@@ -272,6 +344,7 @@ function SimpleMarkdown({ content, colors }: { content: string; colors: ReturnTy
     }
   }
   flushList();
+  flushCodeBlock();
   return <div>{elements}</div>;
 }
 

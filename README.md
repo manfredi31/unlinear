@@ -112,7 +112,7 @@ Widgets are fully interactive: navigate between projects, read task plans, and p
 # Clone and install
 git clone https://github.com/manfredi31/unlinear.git
 cd unlinear
-npm install
+bun install
 
 # Start Postgres (optional — uses Docker)
 docker compose up -d
@@ -121,14 +121,19 @@ docker compose up -d
 cp .env.example .env
 # Edit .env with your DATABASE_URL and OPENAI_API_KEY
 
-# Push the schema
-npm run db:push
+# Push the schema and seed demo data
+bun run db:push
+bun run db:seed
 
 # Run in dev mode
-npm run dev
+bun run dev
 ```
 
 The server starts at `http://localhost:3000`. Open `/inspector` to test tools interactively.
+
+### Database migrations in production
+
+Schema changes to `src/db/schema.ts` are automatically applied to production via a [GitHub Action](.github/workflows/db-push.yml) on every push to `main` — no manual migration step needed.
 
 ### Connect from any MCP client
 
@@ -147,8 +152,9 @@ That's it — start chatting and managing projects in natural language.
 - **[mcp-use](https://mcp-use.com)** — MCP server framework with widget support
 - **Drizzle ORM** + **PostgreSQL** — typed, relational data layer
 - **OpenAI** — LLM-powered plan rewriting on every comment
-- **React** + **Apps SDK** — interactive ChatGPT widgets
+- **React** + **Tailwind CSS** — interactive ChatGPT widgets via mcp-use
 - **Zod** — schema validation for all tool inputs
+- **GitHub Actions** — automated schema pushes on deploy
 
 ---
 
