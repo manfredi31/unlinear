@@ -13,7 +13,8 @@
     "start": "mcp-use start",
     "deploy": "mcp-use deploy",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",

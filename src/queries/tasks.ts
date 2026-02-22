@@ -115,6 +115,20 @@ export async function commentOnTask(input: {
   };
 }
 
+export async function updateTaskStatus(input: {
+  taskId: string;
+  status: "draft" | "in_review" | "approved" | "building" | "done";
+}) {
+  const [updated] = await db
+    .update(tasks)
+    .set({ status: input.status, updatedAt: new Date() })
+    .where(eq(tasks.id, input.taskId))
+    .returning();
+
+  if (!updated) throw new Error(`Task not found: ${input.taskId}`);
+  return updated;
+}
+
 export async function getTaskTimeline(taskId: string) {
   return db
     .select()
