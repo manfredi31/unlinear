@@ -147,11 +147,37 @@ server.tool(
         .describe("Filter by task status"),
     }),
     annotations: { readOnlyHint: true },
+    widget: {
+      name: "tasks-by-project",
+      invoking: "Loading tasks...",
+      invoked: "Tasks loaded",
+    },
   },
   async ({ projectId, status }) => {
     try {
-      const result = await listTasks({ projectId, status });
-      return object({ tasks: result } as any);
+      const [project, result] = await Promise.all([
+        getProject(projectId),
+        listTasks({ projectId, status }),
+      ]);
+      const projectName = project?.name ?? projectId;
+      const openCount = result.filter(
+        (t) => !["done", "approved"].includes(t.status),
+      ).length;
+      return widget({
+        props: {
+          projectName,
+          tasks: result.map((t) => ({
+            id: t.id,
+            number: t.number,
+            title: t.title,
+            status: t.status,
+          })),
+          counts: { open: openCount, total: result.length },
+        },
+        output: text(
+          `${projectName}: ${result.length} task(s), ${openCount} open`,
+        ),
+      });
     } catch (err) {
       return error(`Failed to list tasks: ${errMsg(err)}`);
     }
@@ -161,17 +187,38 @@ server.tool(
 server.tool(
   {
     name: "get-task",
-    description: "Get full task detail with the current plan body",
+    description: "Get full task detail with the current plan body and revision history",
     schema: z.object({
       taskId: z.string().uuid().describe("Task UUID"),
     }),
     annotations: { readOnlyHint: true },
+    widget: {
+      name: "task-detail",
+      invoking: "Loading task...",
+      invoked: "Task loaded",
+    },
   },
   async ({ taskId }) => {
     try {
-      const task = await getTask(taskId);
+      const [task, revisions] = await Promise.all([
+        getTask(taskId),
+        getTaskTimeline(taskId),
+      ]);
       if (!task) return error(`Task not found: ${taskId}`);
-      return object(task as any);
+      return widget({
+        props: {
+          title: task.title,
+          status: task.status,
+          body: task.body,
+          revisions: revisions.map((r) => ({
+            revisionNumber: r.revisionNumber,
+            comment: r.comment,
+            authorId: r.authorId,
+            createdAt: r.createdAt.toISOString(),
+          })),
+        },
+        output: text(`Task: ${task.title} [${task.status}] (rev ${task.currentRevision})`),
+      });
     } catch (err) {
       return error(`Failed to get task: ${errMsg(err)}`);
     }
@@ -256,6 +303,38 @@ server.tool(
     } catch (err) {
       return error(`Failed to get codex run: ${errMsg(err)}`);
     }
+  },
+);
+
+// ---- GitHub tools (stub) ----
+
+server.tool(
+  {
+    name: "list-github-projects",
+    description: "List GitHub repositories (stub — wire to GitHub API later)",
+    schema: z.object({
+      query: z.string().optional().describe("Search query to filter repos"),
+    }),
+    annotations: { readOnlyHint: true },
+    widget: {
+      name: "github-projects",
+      invoking: "Loading repositories...",
+      invoked: "Repositories loaded",
+    },
+  },
+  async ({ query }) => {
+    const repos = [
+      { id: "1", name: "vercel/next.js", url: "https://github.com/vercel/next.js", stars: "122k", description: "React framework for the web" },
+      { id: "2", name: "torvalds/linux", url: "https://github.com/torvalds/linux", stars: "171k", description: "Linux kernel source tree" },
+      { id: "3", name: "tensorflow/tensorflow", url: "https://github.com/tensorflow/tensorflow", stars: "181k", description: "Machine learning for everyone" },
+    ];
+    const filtered = query
+      ? repos.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()) || r.description.toLowerCase().includes(query.toLowerCase()))
+      : repos;
+    return widget({
+      props: { repos: filtered },
+      output: text(`Found ${filtered.length} repository(ies)`),
+    });
   },
 );
 
