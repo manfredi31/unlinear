@@ -92,6 +92,29 @@ const STATUS_LABELS: Record<string, string> = {
   done: "Done",
 };
 
+const SEND_DESTINATIONS = [
+  {
+    id: "codex",
+    label: "Codex",
+    iconUrl:
+      "https://cdn.brandfetch.io/idR3duQxYl/w/400/h/400/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1749527355219",
+  },
+  {
+    id: "claude_code",
+    label: "Claude Code",
+    iconUrl:
+      "https://cdn.brandfetch.io/idW5s392j1/w/338/h/338/theme/dark/icon.png?c=1bxid64Mup7aczewSAYMX&t=1738315794862",
+  },
+  {
+    id: "cursor",
+    label: "Cursor",
+    iconUrl:
+      "https://cdn.brandfetch.io/ideKwS9dxx/w/400/h/400/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1770368804028",
+  },
+] as const;
+
+type SendDestinationId = (typeof SEND_DESTINATIONS)[number]["id"];
+
 function statusStyle(status: string, colors: ReturnType<typeof useColors>) {
   const map: Record<string, { bg: string; text: string }> = {
     draft: { bg: colors.statusDraftBg, text: colors.statusDraftText },
@@ -319,6 +342,119 @@ function StatusDropdown({
                 }} />
                 {STATUS_LABELS[st]}
               </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SendMenu({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const [open, setOpen] = useState(false);
+  const [selectedDestination, setSelectedDestination] =
+    useState<SendDestinationId>("codex");
+
+  const selected =
+    SEND_DESTINATIONS.find((d) => d.id === selectedDestination) ??
+    SEND_DESTINATIONS[0];
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          padding: "4px 10px",
+          fontSize: 12,
+          fontWeight: 600,
+          borderRadius: 10,
+          border: `1px solid ${colors.border}`,
+          backgroundColor: colors.buttonSecondaryBg,
+          color: colors.buttonSecondaryText,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          cursor: "pointer",
+        }}
+      >
+        <img
+          src={selected.iconUrl}
+          alt={`${selected.label} icon`}
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 999,
+            objectFit: "cover",
+          }}
+        />
+        Send
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            marginTop: 4,
+            zIndex: 20,
+            border: `1px solid ${colors.border}`,
+            borderRadius: 8,
+            backgroundColor: colors.dropdownBg,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            minWidth: 170,
+            overflow: "hidden",
+          }}
+        >
+          {SEND_DESTINATIONS.map((destination) => {
+            const isSelected = destination.id === selectedDestination;
+            return (
+              <button
+                key={destination.id}
+                type="button"
+                onClick={() => {
+                  setSelectedDestination(destination.id);
+                  setOpen(false);
+                }}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 12px",
+                  fontSize: 13,
+                  border: "none",
+                  borderBottom: `1px solid ${colors.border}`,
+                  backgroundColor: isSelected ? colors.hoverBg : "transparent",
+                  color: colors.text,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                }}
+              >
+                <img
+                  src={destination.iconUrl}
+                  alt={`${destination.label} icon`}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 999,
+                    objectFit: "cover",
+                  }}
+                />
+                <span>{destination.label}</span>
+              </button>
             );
           })}
         </div>
@@ -642,12 +778,15 @@ export default function TaskDetail() {
         {/* Header with title and status dropdown */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, flex: 1 }}>{props.title}</h2>
-          <StatusDropdown
-            status={status}
-            colors={colors}
-            onChangeStatus={handleChangeStatus}
-            isUpdating={isUpdatingStatus}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StatusDropdown
+              status={status}
+              colors={colors}
+              onChangeStatus={handleChangeStatus}
+              isUpdating={isUpdatingStatus}
+            />
+            {status === "done" && <SendMenu colors={colors} />}
+          </div>
         </div>
 
         {/* Reviewers */}
