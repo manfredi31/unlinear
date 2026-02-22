@@ -1,6 +1,6 @@
 import { eq, and, sql, asc } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { tasks, taskRevisions } from "../db/schema.js";
+import { tasks, taskRevisions, users } from "../db/schema.js";
 import { editPlan } from "../llm/edit-plan.js";
 
 export async function createTask(input: {
@@ -131,8 +131,19 @@ export async function updateTaskStatus(input: {
 
 export async function getTaskTimeline(taskId: string) {
   return db
-    .select()
+    .select({
+      id: taskRevisions.id,
+      taskId: taskRevisions.taskId,
+      revisionNumber: taskRevisions.revisionNumber,
+      body: taskRevisions.body,
+      comment: taskRevisions.comment,
+      authorId: taskRevisions.authorId,
+      authorName: users.name,
+      authorAvatarUrl: users.avatarUrl,
+      createdAt: taskRevisions.createdAt,
+    })
     .from(taskRevisions)
+    .innerJoin(users, eq(taskRevisions.authorId, users.id))
     .where(eq(taskRevisions.taskId, taskId))
     .orderBy(asc(taskRevisions.revisionNumber));
 }

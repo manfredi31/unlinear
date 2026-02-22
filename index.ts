@@ -233,6 +233,8 @@ server.tool(
             revisionNumber: r.revisionNumber,
             comment: r.comment,
             authorId: r.authorId,
+            authorName: r.authorName,
+            authorAvatarUrl: r.authorAvatarUrl,
             createdAt: r.createdAt.toISOString(),
           })),
         },
@@ -437,6 +439,8 @@ server.tool(
           revisionNumber: r.revisionNumber,
           comment: r.comment,
           authorId: r.authorId,
+          authorName: r.authorName,
+          authorAvatarUrl: r.authorAvatarUrl,
           createdAt: r.createdAt.toISOString(),
         })),
       } as any);

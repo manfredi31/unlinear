@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { McpUseProvider, useWidget, useWidgetTheme, useCallTool, type WidgetMetadata } from "mcp-use/react";
+import { McpUseProvider, useWidget, useWidgetTheme, type WidgetMetadata } from "mcp-use/react";
 import { z } from "zod";
 
 function useColors() {
@@ -41,7 +41,6 @@ type Props = z.infer<typeof propsSchema>;
 
 export default function ProjectsList() {
   const { props, isPending, sendFollowUpMessage } = useWidget<Props>();
-  const { callTool: viewTasks } = useCallTool("list-tasks" as any);
   const colors = useColors();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -59,6 +58,7 @@ export default function ProjectsList() {
   const handleProjectClick = (project: Props["projects"][number]) => {
     setLoadingId(project.id);
     sendFollowUpMessage(`Show me the tasks for project "${project.name}" (ID: ${project.id})`);
+    setTimeout(() => setLoadingId(null), 1500);
   };
 
   return (

@@ -84,16 +84,16 @@ async function seed() {
   const now = new Date();
 
   const seedUsers = [
-    { name: "Luca Rivera", email: "luca@unlinear.dev" },
-    { name: "Maya Chen", email: "maya@unlinear.dev" },
-    { name: "Sam Patel", email: "sam@unlinear.dev" },
-    { name: "Ivy Morales", email: "ivy@unlinear.dev" },
-    { name: "Noah Kim", email: "noah@unlinear.dev" },
-    { name: "Ada Brooks", email: "ada@unlinear.dev" },
-    { name: "Rae Johnson", email: "rae@unlinear.dev" },
-    { name: "Jules Park", email: "jules@unlinear.dev" },
-    { name: "Omar Bell", email: "omar@unlinear.dev" },
-    { name: "Nina Shah", email: "nina@unlinear.dev" },
+    { name: "Luca Rivera", email: "luca@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=luca" },
+    { name: "Maya Chen", email: "maya@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=maya" },
+    { name: "Sam Patel", email: "sam@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=sam" },
+    { name: "Ivy Morales", email: "ivy@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=ivy" },
+    { name: "Noah Kim", email: "noah@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=noah" },
+    { name: "Ada Brooks", email: "ada@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=ada" },
+    { name: "Rae Johnson", email: "rae@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=rae" },
+    { name: "Jules Park", email: "jules@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=jules" },
+    { name: "Omar Bell", email: "omar@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=omar" },
+    { name: "Nina Shah", email: "nina@unlinear.dev", avatar: "https://i.pravatar.cc/150?u=nina" },
   ];
 
   const seedProjects: SeedProject[] = [
@@ -136,10 +136,10 @@ async function seed() {
       const insertedUsers = await tx
         .insert(users)
         .values(
-          seedUsers.map((u, idx) => ({
+          seedUsers.map((u) => ({
             name: u.name,
             email: u.email,
-            avatarUrl: `https://api.dicebear.com/9.x/shapes/svg?seed=${idx + 1}`,
+            avatarUrl: u.avatar,
           })),
         )
         .returning();

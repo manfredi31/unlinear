@@ -110,6 +110,8 @@ export default function TasksByProject() {
     setTogglingId(task.id);
     setErrorMsg(null);
     const newStatus = DONE_STATUSES.includes(task.status) ? "draft" : "done";
+    const previousTasks = tasks;
+    const previousCounts = counts;
 
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)),
@@ -123,10 +125,8 @@ export default function TasksByProject() {
     try {
       await setStatus({ taskId: task.id, status: newStatus });
     } catch {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t)),
-      );
-      setCounts(props.counts ?? { open: 0, total: 0 });
+      setTasks(previousTasks);
+      setCounts(previousCounts);
       setErrorMsg("Failed to update status");
     } finally {
       setTogglingId(null);
@@ -265,9 +265,9 @@ export default function TasksByProject() {
                       backgroundColor: p.id === currentProjectId ? colors.hoverBg : "transparent",
                       fontWeight: p.id === currentProjectId ? 600 : 400,
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLDivElement).style.backgroundColor = colors.hoverBg; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hoverBg; }}
                     onMouseLeave={(e) => {
-                      (e.target as HTMLDivElement).style.backgroundColor =
+                      e.currentTarget.style.backgroundColor =
                         p.id === currentProjectId ? colors.hoverBg : "transparent";
                     }}
                   >

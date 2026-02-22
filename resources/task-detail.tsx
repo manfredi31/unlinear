@@ -46,6 +46,8 @@ const propsSchema = z.object({
       revisionNumber: z.number(),
       comment: z.string().nullable(),
       authorId: z.string(),
+      authorName: z.string().optional(),
+      authorAvatarUrl: z.string().nullable().optional(),
       createdAt: z.string(),
     }),
   ),
@@ -257,17 +259,45 @@ export default function TaskDetail() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {comments.map((rev, i) => {
                 const barColor = colors.commentBarColors[i % colors.commentBarColors.length];
+                const name = rev.authorName ?? "Unknown";
+                const initials = name
+                  .split(" ")
+                  .map((w) => w[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2);
+                const avatarUrl = rev.authorAvatarUrl;
                 return (
                   <div key={rev.revisionNumber} style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
                     <div style={{ width: 3, borderRadius: 2, backgroundColor: barColor, flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>Revision {rev.revisionNumber}</span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                        {avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt={name}
+                            style={{
+                              width: 24, height: 24, borderRadius: "50%",
+                              objectFit: "cover", flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: 24, height: 24, borderRadius: "50%",
+                            backgroundColor: barColor, color: "#fff",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 10, fontWeight: 700, flexShrink: 0,
+                            lineHeight: 1,
+                          }}>
+                            {initials}
+                          </div>
+                        )}
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{name}</span>
                         <span style={{ fontSize: 11, color: colors.textSecondary }}>
                           {new Date(rev.createdAt).toLocaleString()}
                         </span>
                       </div>
-                      <div style={{ fontSize: 13, color: colors.text, lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 13, color: colors.text, lineHeight: 1.5, paddingLeft: 32 }}>
                         {rev.comment}
                       </div>
                     </div>

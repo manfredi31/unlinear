@@ -90,6 +90,7 @@ export default function ProjectDetail() {
     sendFollowUpMessage(
       `Show me the tasks for project "${props.name}" (ID: ${props.id})`,
     );
+    setTimeout(() => setViewingTasks(false), 1500);
   };
 
   const handleAskAI = () => {
