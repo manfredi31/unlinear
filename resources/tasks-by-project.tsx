@@ -12,15 +12,77 @@ function useColors() {
     border: theme === "dark" ? "#363636" : "#e5e5e5",
     infoBg: theme === "dark" ? "#1a3a5c" : "#e3f2fd",
     infoText: theme === "dark" ? "#64b5f6" : "#1565c0",
-    successBg: theme === "dark" ? "#1b5e20" : "#e8f5e9",
-    successIcon: theme === "dark" ? "#66bb6a" : "#2e7d32",
-    iconBg: theme === "dark" ? "#333" : "#eee",
-    buttonBorder: theme === "dark" ? "#555" : "#ccc",
     dropdownBg: theme === "dark" ? "#2a2a2a" : "#fff",
     hoverBg: theme === "dark" ? "#333" : "#f5f5f5",
     errorBg: theme === "dark" ? "#3a1a1a" : "#ffebee",
     errorText: theme === "dark" ? "#ef5350" : "#c62828",
+    statusDraftBg: theme === "dark" ? "#333" : "#f0f0f0",
+    statusDraftText: theme === "dark" ? "#aaa" : "#666",
+    statusReviewBg: theme === "dark" ? "#3a3a1a" : "#fffbeb",
+    statusReviewText: theme === "dark" ? "#fbbf24" : "#d97706",
+    statusApprovedBg: theme === "dark" ? "#1a3a1a" : "#ecfdf5",
+    statusApprovedText: theme === "dark" ? "#4ade80" : "#059669",
+    statusBuildingBg: theme === "dark" ? "#1a2a3a" : "#eff6ff",
+    statusBuildingText: theme === "dark" ? "#60a5fa" : "#2563eb",
+    statusDoneBg: theme === "dark" ? "#1b3a1b" : "#e8f5e9",
+    statusDoneText: theme === "dark" ? "#66bb6a" : "#2e7d32",
   };
+}
+
+const STATUS_CONFIG: Record<string, { label: string; icon: string }> = {
+  draft: { label: "Draft", icon: "circle" },
+  in_review: { label: "In Review", icon: "eye" },
+  approved: { label: "Approved", icon: "check" },
+  building: { label: "Building", icon: "hammer" },
+  done: { label: "Done", icon: "check-circle" },
+};
+
+function statusColors(status: string, colors: ReturnType<typeof useColors>) {
+  const map: Record<string, { bg: string; text: string }> = {
+    draft: { bg: colors.statusDraftBg, text: colors.statusDraftText },
+    in_review: { bg: colors.statusReviewBg, text: colors.statusReviewText },
+    approved: { bg: colors.statusApprovedBg, text: colors.statusApprovedText },
+    building: { bg: colors.statusBuildingBg, text: colors.statusBuildingText },
+    done: { bg: colors.statusDoneBg, text: colors.statusDoneText },
+  };
+  return map[status] ?? map.draft;
+}
+
+function StatusIcon({ status, colors }: { status: string; colors: ReturnType<typeof useColors> }) {
+  const sc = statusColors(status, colors);
+
+  if (status === "done" || status === "approved") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sc.text} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    );
+  }
+
+  if (status === "in_review") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sc.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+
+  if (status === "building") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sc.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sc.text} strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
 }
 
 const propsSchema = z.object({
@@ -39,7 +101,7 @@ const propsSchema = z.object({
 });
 
 export const widgetMetadata: WidgetMetadata = {
-  description: "Display tasks for a project with status toggle and project switching",
+  description: "Display tasks for a project with status badges and navigation",
   props: propsSchema,
   exposeAsTool: false,
 };
@@ -47,40 +109,10 @@ export const widgetMetadata: WidgetMetadata = {
 type Props = z.infer<typeof propsSchema>;
 type Task = Props["tasks"][number];
 
-const DONE_STATUSES = ["done", "approved"];
-
-function StatusIcon({ done, colors }: { done: boolean; colors: ReturnType<typeof useColors> }) {
-  if (done) {
-    return (
-      <div style={{
-        width: 32, height: 32, borderRadius: 8,
-        backgroundColor: colors.successBg,
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill={colors.successIcon} stroke="none">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-        </svg>
-      </div>
-    );
-  }
-  return (
-    <div style={{
-      width: 32, height: 32, borderRadius: 8,
-      backgroundColor: colors.iconBg,
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-      </svg>
-    </div>
-  );
-}
-
 export default function TasksByProject() {
-  const { props, isPending: isLoading } = useWidget<Props>();
+  const { props, isPending: isLoading, sendFollowUpMessage } = useWidget<Props>();
   const colors = useColors();
 
-  const { callToolAsync: setStatus } = useCallTool("set-task-status" as any);
   const { callToolAsync: fetchProjects } = useCallTool("list-project-options" as any);
   const { callToolAsync: fetchTasks } = useCallTool("list-tasks-data" as any);
 
@@ -88,8 +120,6 @@ export default function TasksByProject() {
   const [counts, setCounts] = useState({ open: 0, total: 0 });
   const [projectName, setProjectName] = useState("");
   const [currentProjectId, setCurrentProjectId] = useState("");
-
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -106,38 +136,8 @@ export default function TasksByProject() {
     }
   }, [isLoading, props]);
 
-  const handleToggleStatus = async (task: Task) => {
-    setTogglingId(task.id);
-    setErrorMsg(null);
-    const newStatus = DONE_STATUSES.includes(task.status) ? "draft" : "done";
-    const previousTasks = tasks;
-    const previousCounts = counts;
-
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)),
-    );
-    const newOpen = tasks.filter((t) => {
-      const s = t.id === task.id ? newStatus : t.status;
-      return !DONE_STATUSES.includes(s);
-    }).length;
-    setCounts({ open: newOpen, total: tasks.length });
-
-    try {
-      await setStatus({ taskId: task.id, status: newStatus });
-    } catch {
-      setTasks(previousTasks);
-      setCounts(previousCounts);
-      setErrorMsg("Failed to update status");
-    } finally {
-      setTogglingId(null);
-    }
-  };
-
   const handleOpenDropdown = async () => {
-    if (dropdownOpen) {
-      setDropdownOpen(false);
-      return;
-    }
+    if (dropdownOpen) { setDropdownOpen(false); return; }
     setDropdownOpen(true);
     if (projectOptions.length > 0) return;
 
@@ -145,9 +145,7 @@ export default function TasksByProject() {
     try {
       const result = await fetchProjects({});
       const content = result?.structuredContent as any;
-      if (content?.options) {
-        setProjectOptions(content.options);
-      }
+      if (content?.options) setProjectOptions(content.options);
     } catch {
       setErrorMsg("Failed to load projects");
     } finally {
@@ -175,6 +173,10 @@ export default function TasksByProject() {
     } finally {
       setSwitchingProject(false);
     }
+  };
+
+  const handleOpenTask = (task: Task) => {
+    sendFollowUpMessage(`Open task "${task.title}" (id: ${task.id})`);
   };
 
   if (isLoading) {
@@ -207,7 +209,7 @@ export default function TasksByProject() {
             <polyline points="16 18 22 12 16 6" />
             <polyline points="8 6 2 12 8 18" />
           </svg>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Tasks by project</h2>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Tasks</h2>
           <span style={{ marginLeft: "auto" }} />
           <span style={{
             padding: "3px 10px", fontSize: 12, fontWeight: 600, borderRadius: 12,
@@ -217,16 +219,14 @@ export default function TasksByProject() {
           </span>
         </div>
 
-        {/* Project selector dropdown */}
+        {/* Project selector */}
         <div style={{ position: "relative", marginBottom: 14 }}>
           <div
             onClick={handleOpenDropdown}
             style={{
               padding: "8px 12px",
-              border: `1px solid ${colors.border}`,
-              borderRadius: 8,
-              backgroundColor: colors.cardBg,
-              fontSize: 14,
+              border: `1px solid ${colors.border}`, borderRadius: 8,
+              backgroundColor: colors.cardBg, fontSize: 14,
               display: "flex", alignItems: "center", justifyContent: "space-between",
               cursor: "pointer",
               opacity: switchingProject ? 0.6 : 1,
@@ -248,13 +248,9 @@ export default function TasksByProject() {
               maxHeight: 200, overflowY: "auto",
             }}>
               {loadingProjects ? (
-                <div style={{ padding: "12px 16px", fontSize: 13, color: colors.textSecondary }}>
-                  Loading projects...
-                </div>
+                <div style={{ padding: "12px 16px", fontSize: 13, color: colors.textSecondary }}>Loading projects...</div>
               ) : projectOptions.length === 0 ? (
-                <div style={{ padding: "12px 16px", fontSize: 13, color: colors.textSecondary }}>
-                  No projects found
-                </div>
+                <div style={{ padding: "12px 16px", fontSize: 13, color: colors.textSecondary }}>No projects found</div>
               ) : (
                 projectOptions.map((p) => (
                   <div
@@ -267,8 +263,7 @@ export default function TasksByProject() {
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hoverBg; }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        p.id === currentProjectId ? colors.hoverBg : "transparent";
+                      e.currentTarget.style.backgroundColor = p.id === currentProjectId ? colors.hoverBg : "transparent";
                     }}
                   >
                     {p.name}
@@ -279,40 +274,46 @@ export default function TasksByProject() {
           )}
         </div>
 
-        <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 12 }}>
+        {/* Task list */}
+        <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 4 }}>
           {tasks.length === 0 ? (
             <div style={{ padding: 20, textAlign: "center", color: colors.textSecondary, fontSize: 14 }}>
               No tasks for this project
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               {tasks.map((task) => {
-                const done = DONE_STATUSES.includes(task.status);
-                const isToggling = togglingId === task.id;
+                const sc = statusColors(task.status, colors);
+                const cfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.draft;
                 return (
-                  <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
-                    <StatusIcon done={done} colors={colors} />
+                  <div
+                    key={task.id}
+                    onClick={() => handleOpenTask(task)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "12px 8px",
+                      borderBottom: `1px solid ${colors.border}`,
+                      cursor: "pointer",
+                      borderRadius: 6,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.hoverBg; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                  >
+                    <StatusIcon status={task.status} colors={colors} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{task.title}</div>
                       <div style={{ fontSize: 12, color: colors.textSecondary }}>
-                        {projectName} · {done ? "Done" : task.status.replace("_", " ")}
+                        #{task.number} · {projectName}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleToggleStatus(task)}
-                      disabled={isToggling}
-                      style={{
-                        padding: "4px 14px", fontSize: 13,
-                        border: `1px solid ${colors.buttonBorder}`,
-                        borderRadius: 20, backgroundColor: colors.bg,
-                        cursor: isToggling ? "wait" : "pointer",
-                        whiteSpace: "nowrap",
-                        opacity: isToggling ? 0.5 : 1,
-                        color: colors.text,
-                      }}
-                    >
-                      {isToggling ? "..." : done ? "Reopen" : "Done"}
-                    </button>
+                    <span style={{
+                      padding: "2px 10px", fontSize: 11, fontWeight: 600,
+                      borderRadius: 10, whiteSpace: "nowrap",
+                      backgroundColor: sc.bg, color: sc.text,
+                      textTransform: "uppercase", letterSpacing: 0.5,
+                    }}>
+                      {cfg.label}
+                    </span>
                   </div>
                 );
               })}

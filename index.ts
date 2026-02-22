@@ -15,6 +15,11 @@ import {
 } from "./src/queries/tasks.js";
 import { approveTask } from "./src/queries/approvals.js";
 import { getCodexRun } from "./src/queries/codex.js";
+import {
+  getTaskReviewers,
+  addTaskReviewer,
+  removeTaskReviewer,
+} from "./src/queries/reviewers.js";
 
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -217,20 +222,28 @@ server.tool(
   },
   async ({ taskId }) => {
     try {
-      const [task, revisions] = await Promise.all([
+      const [task, revisions, reviewers] = await Promise.all([
         getTask(taskId),
         getTaskTimeline(taskId),
+        getTaskReviewers(taskId),
       ]);
       if (!task) return error(`Task not found: ${taskId}`);
       return widget({
         props: {
           taskId: task.id,
+          projectId: task.projectId,
           title: task.title,
           status: task.status,
           body: task.body,
           actorUserId: task.authorId,
+          reviewers: reviewers.map((r) => ({
+            userId: r.userId,
+            userName: r.userName,
+            userAvatarUrl: r.userAvatarUrl,
+          })),
           revisions: revisions.map((r) => ({
             revisionNumber: r.revisionNumber,
+            body: r.body,
             comment: r.comment,
             authorId: r.authorId,
             authorName: r.authorName,
@@ -425,9 +438,10 @@ server.tool(
   },
   async ({ taskId }) => {
     try {
-      const [task, revisions] = await Promise.all([
+      const [task, revisions, reviewers] = await Promise.all([
         getTask(taskId),
         getTaskTimeline(taskId),
+        getTaskReviewers(taskId),
       ]);
       if (!task) return error(`Task not found: ${taskId}`);
       return object({
@@ -435,8 +449,14 @@ server.tool(
         title: task.title,
         status: task.status,
         body: task.body,
+        reviewers: reviewers.map((r) => ({
+          userId: r.userId,
+          userName: r.userName,
+          userAvatarUrl: r.userAvatarUrl,
+        })),
         revisions: revisions.map((r) => ({
           revisionNumber: r.revisionNumber,
+          body: r.body,
           comment: r.comment,
           authorId: r.authorId,
           authorName: r.authorName,
@@ -446,6 +466,84 @@ server.tool(
       } as any);
     } catch (err) {
       return error(`Failed to get task data: ${errMsg(err)}`);
+    }
+  },
+);
+
+server.tool(
+  {
+    name: "add-task-reviewer",
+    description: "Add a reviewer to a task",
+    schema: z.object({
+      taskId: z.string().uuid().describe("Task UUID"),
+      userId: z.string().uuid().describe("UUID of the user to add as reviewer"),
+    }),
+  },
+  async ({ taskId, userId }) => {
+    try {
+      await addTaskReviewer({ taskId, userId });
+      const reviewers = await getTaskReviewers(taskId);
+      return object({
+        reviewers: reviewers.map((r) => ({
+          userId: r.userId,
+          userName: r.userName,
+          userAvatarUrl: r.userAvatarUrl,
+        })),
+      } as any);
+    } catch (err) {
+      return error(`Failed to add reviewer: ${errMsg(err)}`);
+    }
+  },
+);
+
+server.tool(
+  {
+    name: "remove-task-reviewer",
+    description: "Remove a reviewer from a task",
+    schema: z.object({
+      taskId: z.string().uuid().describe("Task UUID"),
+      userId: z.string().uuid().describe("UUID of the reviewer to remove"),
+    }),
+  },
+  async ({ taskId, userId }) => {
+    try {
+      await removeTaskReviewer({ taskId, userId });
+      const reviewers = await getTaskReviewers(taskId);
+      return object({
+        reviewers: reviewers.map((r) => ({
+          userId: r.userId,
+          userName: r.userName,
+          userAvatarUrl: r.userAvatarUrl,
+        })),
+      } as any);
+    } catch (err) {
+      return error(`Failed to remove reviewer: ${errMsg(err)}`);
+    }
+  },
+);
+
+server.tool(
+  {
+    name: "list-project-members",
+    description: "List members of a project (for reviewer picker)",
+    schema: z.object({
+      projectId: z.string().uuid().describe("Project UUID"),
+    }),
+    annotations: { readOnlyHint: true },
+  },
+  async ({ projectId }) => {
+    try {
+      const project = await getProject(projectId);
+      if (!project) return error(`Project not found: ${projectId}`);
+      return object({
+        members: project.members.map((m) => ({
+          userId: m.userId,
+          userName: m.userName,
+          role: m.role,
+        })),
+      } as any);
+    } catch (err) {
+      return error(`Failed to list members: ${errMsg(err)}`);
     }
   },
 );

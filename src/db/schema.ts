@@ -155,6 +155,24 @@ export const approvals = pgTable(
   (t) => [index("approvals_task_idx").on(t.taskId)],
 );
 
+// ---- Task reviewers ----
+
+export const taskReviewers = pgTable(
+  "task_reviewers",
+  {
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.taskId, t.userId] })],
+);
+
 // ---- Codex runs (mocked for now) ----
 
 export const codexRuns = pgTable(
