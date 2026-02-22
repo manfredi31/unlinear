@@ -21,13 +21,15 @@
 
 ## The Vision
 
-> As we move into a world where every line of code is written by AI, the real work of humans shifts to **discussing ideas and features at a high level in natural language in plan markdown files**. 
+> As we move into a world where every line of code is written by AI, the most valuable skill isn't writing code, it's communicating intent and discussing ideas at a high level in natural language. 
 
-GitHub was designed for sharing and reviewing code. Unlinear is a Github, but for markdown plans as the first primitive (instead of code), and powered by MCP. 
+GitHub was designed to share and review code. We believe that specifications, not code, are becoming the fundamental unit of programming.
 
-Code is the least leverage manufact. Plans are way higher leverage manufact, and humans should focus on plans.
+Unlinear is a Github, but for markdown plans as the most important artifact (instead of code), powered by MCP. 
 
-In unlinear, Engineers share and discuss plans, e quando tutti gli umani hanno finito di discutere sull'highlevel plan ed il plan è approvato, unlinear invia il plan al coding agent per l'implementazione.
+Code is now a low-leverage artifact. Technical decisions are what matters, so humans should focus on plans. 
+
+In Unlinear, engineers collaborate on high-level markdown plans. They discuss, refine, and approve the specification together. Once the plan is finalized, Unlinear hands it off to a coding agent for implementation.
 
 ### Why MCP?
 
