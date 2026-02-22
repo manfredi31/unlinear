@@ -11,6 +11,7 @@ import {
   listTasks,
   commentOnTask,
   getTaskTimeline,
+  updateTaskStatus,
 } from "./src/queries/tasks.js";
 import { approveTask } from "./src/queries/approvals.js";
 import { getCodexRun } from "./src/queries/codex.js";
@@ -179,7 +180,9 @@ server.tool(
       ).length;
       return widget({
         props: {
+          projectId,
           projectName,
+          actorUserId: project?.ownerId ?? null,
           tasks: result.map((t) => ({
             id: t.id,
             number: t.number,
@@ -221,9 +224,11 @@ server.tool(
       if (!task) return error(`Task not found: ${taskId}`);
       return widget({
         props: {
+          taskId: task.id,
           title: task.title,
           status: task.status,
           body: task.body,
+          actorUserId: task.authorId,
           revisions: revisions.map((r) => ({
             revisionNumber: r.revisionNumber,
             comment: r.comment,
@@ -316,6 +321,127 @@ server.tool(
       return object(run as any);
     } catch (err) {
       return error(`Failed to get codex run: ${errMsg(err)}`);
+    }
+  },
+);
+
+// ---- Widget interactivity tools ----
+
+server.tool(
+  {
+    name: "set-task-status",
+    description: "Toggle a task's status (e.g. mark done or reopen)",
+    schema: z.object({
+      taskId: z.string().uuid().describe("Task UUID"),
+      status: z
+        .enum(["draft", "in_review", "approved", "building", "done"])
+        .describe("New status"),
+    }),
+  },
+  async ({ taskId, status }) => {
+    try {
+      const updated = await updateTaskStatus({ taskId, status });
+      return object({
+        id: updated.id,
+        status: updated.status,
+      } as any);
+    } catch (err) {
+      return error(`Failed to update task status: ${errMsg(err)}`);
+    }
+  },
+);
+
+server.tool(
+  {
+    name: "list-project-options",
+    description: "Return a lightweight list of projects for a selector dropdown",
+    schema: z.object({}),
+    annotations: { readOnlyHint: true },
+  },
+  async () => {
+    try {
+      const projects = await listProjects();
+      return object({
+        options: projects.map((p) => ({ id: p.id, name: p.name })),
+      } as any);
+    } catch (err) {
+      return error(`Failed to list project options: ${errMsg(err)}`);
+    }
+  },
+);
+
+server.tool(
+  {
+    name: "list-tasks-data",
+    description:
+      "Return tasks data for a project (used by widgets to refresh after mutations)",
+    schema: z.object({
+      projectId: z.string().uuid().describe("Project UUID"),
+      status: z
+        .enum(["draft", "in_review", "approved", "building", "done"])
+        .optional()
+        .describe("Filter by task status"),
+    }),
+    annotations: { readOnlyHint: true },
+  },
+  async ({ projectId, status }) => {
+    try {
+      const [project, result] = await Promise.all([
+        getProject(projectId),
+        listTasks({ projectId, status }),
+      ]);
+      const projectName = project?.name ?? projectId;
+      const openCount = result.filter(
+        (t) => !["done", "approved"].includes(t.status),
+      ).length;
+      return object({
+        projectId,
+        projectName,
+        tasks: result.map((t) => ({
+          id: t.id,
+          number: t.number,
+          title: t.title,
+          status: t.status,
+        })),
+        counts: { open: openCount, total: result.length },
+      } as any);
+    } catch (err) {
+      return error(`Failed to list tasks data: ${errMsg(err)}`);
+    }
+  },
+);
+
+server.tool(
+  {
+    name: "get-task-data",
+    description:
+      "Return full task detail data (used by widgets to refresh after comment/mutation)",
+    schema: z.object({
+      taskId: z.string().uuid().describe("Task UUID"),
+    }),
+    annotations: { readOnlyHint: true },
+  },
+  async ({ taskId }) => {
+    try {
+      const [task, revisions] = await Promise.all([
+        getTask(taskId),
+        getTaskTimeline(taskId),
+      ]);
+      if (!task) return error(`Task not found: ${taskId}`);
+      return object({
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        body: task.body,
+        revisions: revisions.map((r) => ({
+          revisionNumber: r.revisionNumber,
+          comment: r.comment,
+          authorId: r.authorId,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      } as any);
+    } catch (err) {
+      return error(`Failed to get task data: ${errMsg(err)}`);
     }
   },
 );
